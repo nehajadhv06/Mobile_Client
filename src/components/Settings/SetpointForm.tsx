@@ -1,10 +1,10 @@
-import { Card, CardContent, Typography, TextField, Button } from "@mui/material";
-import { Grid } from '@mui/material';
+import { Card, CardContent, Typography, TextField, Button, Grid } from "@mui/material";
 import { Settings as SettingsIcon, Save } from "@mui/icons-material";
 import { useMqtt } from "../../hooks/MqttProvider";
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { ToastContainer, toast, Bounce } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 
-// 1. Define allowed keys
 type SetpointKey =
   | "S_UV"
   | "S_OV"
@@ -21,28 +21,61 @@ type SetpointKey =
   | "S_POWER_ON_DLY"
   | "S_IOT_TIMER";
 
-// 2. Type for setpoints object
 type Setpoints = Record<SetpointKey, string>;
 
-const SetpointForm = () => {
-  const { parameters, submitSetpoints } = useMqtt();
+const toastOptions = {
+  position: "top-right" as const,
+  autoClose: 3000,
+  hideProgressBar: false,
+  closeOnClick: true,
+  pauseOnHover: true,
+  draggable: true,
+  pauseOnFocusLoss: true,
+  theme: "dark" as const,
+  transition: Bounce,
+};
 
+const SetpointForm = () => {
+  const { parameters, submitSetpoints, deviceId } = useMqtt();
   const [setpoints, setSetpoints] = useState<Setpoints>({
-    S_UV: parameters.S_UV || "240",
-    S_OV: parameters.S_OV || "470",
-    S_UL: parameters.S_UL || "2",
-    S_OL: parameters.S_OL || "20",
-    S_TIMER_EN: parameters.S_TIMER_EN || "0",
-    S_HOUR: parameters.S_HOUR || "1",
-    S_MIN: parameters.S_MIN || "0",
-    S_CYC_TIMER: parameters.S_CYC_TIMER || "0",
-    S_ON_TIME: parameters.S_ON_TIME || "020",
-    S_OFF_TIME: parameters.S_OFF_TIME || "060",
-    S_DRY_RUN_RST_TIME: parameters.S_DRY_RUN_RST_TIME || "0",
-    S_SPP_BYPASS: parameters.S_SPP_BYPASS || "0",
-    S_POWER_ON_DLY: parameters.S_POWER_ON_DLY || "10",
-    S_IOT_TIMER: parameters.S_IOT_TIMER || "2",
+    S_UV: "240",
+    S_OV: "470",
+    S_UL: "2",
+    S_OL: "20",
+    S_TIMER_EN: "0",
+    S_HOUR: "1",
+    S_MIN: "0",
+    S_CYC_TIMER: "0",
+    S_ON_TIME: "020",
+    S_OFF_TIME: "060",
+    S_DRY_RUN_RST_TIME: "0",
+    S_SPP_BYPASS: "0",
+    S_POWER_ON_DLY: "10",
+    S_IOT_TIMER: "2",
   });
+
+  // Update setpoints when parameters change
+  useEffect(() => {
+    if (parameters) {
+      setSetpoints((prev) => ({
+        ...prev,
+        S_UV: parameters.S_UV || "240",
+        S_OV: parameters.S_OV || "470",
+        S_UL: parameters.S_UL || "2",
+        S_OL: parameters.S_OL || "20",
+        S_TIMER_EN: parameters.S_TIMER_EN || "0",
+        S_HOUR: parameters.S_HOUR || "1",
+        S_MIN: parameters.S_MIN || "0",
+        S_CYC_TIMER: parameters.S_CYC_TIMER || "0",
+        S_ON_TIME: parameters.S_ON_TIME || "020",
+        S_OFF_TIME: parameters.S_OFF_TIME || "060",
+        S_DRY_RUN_RST_TIME: parameters.S_DRY_RUN_RST_TIME || "0",
+        S_SPP_BYPASS: parameters.S_SPP_BYPASS || "0",
+        S_POWER_ON_DLY: parameters.S_POWER_ON_DLY || "10",
+        S_IOT_TIMER: parameters.S_IOT_TIMER || "2",
+      }));
+    }
+  }, [parameters]);
 
   const setpointFields: { id: SetpointKey; label: string; min: number; max: number }[] = [
     { id: "S_UV", label: "UNDER VOLT", min: 0, max: 380 },
@@ -65,9 +98,19 @@ const SetpointForm = () => {
     const numValue = parseInt(value);
     const field = setpointFields.find((f) => f.id === id);
     if (!field || isNaN(numValue) || numValue < field.min || numValue > field.max) {
+      toast.warning(`Value for ${field?.label} must be between ${field?.min} and ${field?.max}`, toastOptions);
       return;
     }
     setSetpoints((prev) => ({ ...prev, [id]: value }));
+  };
+
+  const handleSubmit = () => {
+    if (!deviceId) {
+      toast.error("Please connect to a device first!", toastOptions);
+      return;
+    }
+    submitSetpoints(setpoints);
+    toast.success("Setpoints sent successfully!", toastOptions);
   };
 
   return (
@@ -84,7 +127,7 @@ const SetpointForm = () => {
                 fullWidth
                 label={field.label}
                 type="number"
-                value={setpoints[field.id] ?? ""}
+                value={setpoints[field.id] || ""}
                 onChange={(e) => handleChange(field.id, e.target.value)}
                 InputProps={{
                   inputProps: { min: field.min, max: field.max },
@@ -100,12 +143,14 @@ const SetpointForm = () => {
             variant="contained"
             color="primary"
             startIcon={<Save />}
-            onClick={() => submitSetpoints(setpoints)}
+            onClick={handleSubmit}
+            disabled={!deviceId}
           >
-            SAVE SETTINGS
+            SUBMIT SETTINGS
           </Button>
         </div>
       </CardContent>
+      <ToastContainer />
     </Card>
   );
 };

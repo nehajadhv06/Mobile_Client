@@ -1,5 +1,8 @@
 import axios from 'axios';
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || (import.meta.env.MODE === 'production' ? 'https://your-production-api.com' : 'http://localhost:8080/api');
+
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 
+  (import.meta.env.MODE === 'production' ? 'https://yourdomain.com/api' : 'http://localhost:8080/api');
+
 console.log('API running at:', API_BASE_URL);
 
 const api = axios.create({
@@ -9,12 +12,14 @@ const api = axios.create({
     'Content-Type': 'application/json',
   },
 });
+
 // Add response interceptor for error handling
 api.interceptors.response.use(
   (response) => response,
-  (error) => {
-    console.error('API request failed:', error.message);
+  (error: any) => {
+    console.error('API request failed:', error.message || error);
     return Promise.reject(error);
   }
 );
+
 export default api;

@@ -1,4 +1,3 @@
-
 {
   "name": "pump-controller-frontend",
   "version": "0.1.0",
@@ -14,7 +13,9 @@
     "mqtt": "^5.14.1",
     "react": "^19.1.1",
     "react-dom": "^19.1.1",
-    "react-router-dom": "^6.6.1"
+    "react-router-dom": "^6.6.1",
+    "react-toastify": "^11.0.5",
+    "toastify": "^2.0.1"
   },
   "devDependencies": {
     "@types/node": "^20.16.5",

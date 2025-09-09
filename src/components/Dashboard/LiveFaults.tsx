@@ -1,30 +1,33 @@
 import { useEffect, useState } from 'react';
 import { Card, CardContent, Typography, Grid } from '@mui/material';
 import { Warning } from '@mui/icons-material';
-import axios from 'axios';
 import { useMqtt } from '../../hooks/MqttProvider';
 
 const LiveFaults = () => {
-  const { deviceId } = useMqtt();
-  const [parameters, setParameters] = useState<Record<string, string>>({});
+  const { deviceId, parameters } = useMqtt();
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (deviceId) {
-      const fetchParameters = async () => {
-        try {
-          const response = await axios.get<Record<string, string>>(
-            `http://localhost:8080/api/parameters/${deviceId}`
-          );
-          setParameters(response.data);
-        } catch (error) {
-          console.error('Error fetching faults:', error);
-        }
-      };
-      fetchParameters();
-      const interval = setInterval(fetchParameters, 5000); // Poll every 5 seconds
-      return () => clearInterval(interval);
+    if (!deviceId) {
+      setError('No device ID provided. Please enter a valid device ID.');
+    } else {
+      setError(null);
     }
   }, [deviceId]);
+
+  if (error) {
+    return (
+      <Card sx={{ mb: 2 }}>
+        <CardContent>
+          <Typography variant="h6" gutterBottom>
+            <Warning fontSize="small" sx={{ mr: 1 }} />
+            Live Faults
+          </Typography>
+          <Typography color="error">{error}</Typography>
+        </CardContent>
+      </Card>
+    );
+  }
 
   return (
     <Card sx={{ mb: 2 }}>
